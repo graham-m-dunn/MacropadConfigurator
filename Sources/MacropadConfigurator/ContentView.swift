@@ -332,6 +332,12 @@ public struct ContentView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.secondary)
                         Spacer()
+                        Button(action: exportLogs) {
+                            Text("Export logs...")
+                                .font(.caption2)
+                        }
+                        .buttonStyle(.borderless)
+                        
                         Button(action: { hidService.logs.removeAll() }) {
                             Text("Clear logs")
                                 .font(.caption2)
@@ -639,6 +645,26 @@ public struct ContentView: View {
             case .press(let color):
                 ledModeSelection = 4
                 ledColorSelection = color
+            }
+        }
+    }
+    
+    private func exportLogs() {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.plainText]
+        savePanel.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        savePanel.nameFieldStringValue = "macropad_configurator_logs.txt"
+        savePanel.title = "Export Logs"
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    let logContent = hidService.logs.joined(separator: "\n")
+                    try logContent.write(to: url, atomically: true, encoding: .utf8)
+                    hidService.log("Success: Logs exported to file.")
+                } catch {
+                    hidService.log("Error: Failed to export logs (\(error.localizedDescription)).")
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 public struct ContentView: View {
     @StateObject private var hidService = HIDService()
@@ -133,6 +134,47 @@ public struct ContentView: View {
                     .padding(.horizontal)
                     .padding(.top, 4)
                 }
+                
+                Divider()
+                    .padding(.horizontal)
+                
+                // Profiles Section
+                Text("Profiles")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                
+                VStack(spacing: 8) {
+                    Button(action: saveBackupToFile) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Backup Profile...")
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button(action: loadBackupFromFile) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                            Text("Load Profile...")
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button(action: downloadAllConfigurations) {
+                        HStack {
+                            Image(systemName: "bolt.fill")
+                            Text("Flash Profile")
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!hidService.isConnected || mockMappings.isEmpty)
+                }
+                .padding(.horizontal)
                 
                 Spacer()
                 
@@ -612,5 +654,116 @@ public struct ContentView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+    }
+    
+    private func saveBackupToFile() {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.json]
+        savePanel.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        savePanel.nameFieldStringValue = "macropad_backup.json"
+        savePanel.title = "Save Macropad Backup"
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = .prettyPrinted
+                    let data = try encoder.encode(mockMappings)
+                    try data.write(to: url)
+                    hidService.log("Success: Configuration backed up to file.")
+                } catch {
+                    hidService.log("Error: Failed to save backup (\(error.localizedDescription)).")
+                }
+            }
+        }
+    }
+    
+    private func loadBackupFromFile() {
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        openPanel.title = "Load Macropad Backup"
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.canChooseFiles = true
+        
+        openPanel.begin { response in
+            if response == .OK, let url = openPanel.url {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let decoder = JSONDecoder()
+                    let loadedMappings = try decoder.decode([String: KeyMacro].self, from: data)
+                    DispatchQueue.main.async {
+                        self.mockMappings = loadedMappings
+                        self.loadConfigurationForSelectedKey()
+                        hidService.log("Success: Loaded configuration from file.")
+                    }
+                } catch {
+                    hidService.log("Error: Failed to parse backup file (\(error.localizedDescription)).")
+                }
+            }
+        }
+    }
+    
+    private func parsePath(_ path: String) -> (Key, UInt8)? {
+        let parts = path.components(separatedBy: "-L")
+        guard parts.count == 2, let layer = UInt8(parts[1]) else { return nil }
+        
+        let keyDesc = parts[0]
+        if keyDesc.hasPrefix("Button ") {
+            if let numStr = keyDesc.components(separatedBy: " ").last, let index = Int(numStr) {
+                return (.button(index - 1), layer)
+            }
+        } else if keyDesc.hasPrefix("Knob ") {
+            let subparts = keyDesc.components(separatedBy: " ")
+            if subparts.count >= 3, let knobNum = Int(subparts[1]) {
+                let actionDesc = subparts[2...].joined(separator: " ")
+                let action: KnobAction
+                if actionDesc.contains("CCW") {
+                    action = .rotateCCW
+                } else if actionDesc.contains("CW") {
+                    action = .rotateCW
+                } else {
+                    action = .press
+                }
+                return (.knob(knobNum - 1, action), layer)
+            }
+        }
+        return nil
+    }
+    
+    private func downloadAllConfigurations() {
+        guard hidService.isConnected else { return }
+        
+        let mappings = mockMappings
+        hidService.log("Starting bulk download of \(mappings.count) mappings...")
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            var success = true
+            for (path, macro) in mappings {
+                guard let (key, layer) = self.parsePath(path) else { continue }
+                
+                let packets = Protocol.buildPackets(key: key, layer: layer, macro: macro, model: self.hidService.connectedModel ?? .ch57x_1)
+                
+                for packet in packets {
+                    if !self.hidService.writeReport(packet: packet) {
+                        success = false
+                        break
+                    }
+                    Thread.sleep(forTimeInterval: 0.01)
+                }
+                
+                if !success { break }
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+            
+            DispatchQueue.main.async {
+                if success {
+                    self.hidService.log("Success: Bulk download completed successfully.")
+                } else {
+                    self.hidService.log("Error: Bulk download failed midway.")
+                }
+            }
+        }
     }
 }

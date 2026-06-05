@@ -192,9 +192,13 @@ public class HIDService: ObservableObject {
                 let cmd: [UInt8] = [0x03, 0xfa, arg2, arg3, outerIndex]
                 _ = self.writeReport(packet: cmd)
             } else {
-                self.log("Reading LED configurations...")
-                self.readPhase = .readingLEDs(layerIndex: 0)
-                sendNextReadCommand()
+                if model == .ch57x_2 {
+                    self.log("Reading LED configurations...")
+                    self.readPhase = .readingLEDs(layerIndex: 0)
+                    sendNextReadCommand()
+                } else {
+                    self.finishReading()
+                }
             }
             
         case .readingLEDs(let layerIndex):
@@ -231,7 +235,7 @@ public class HIDService: ObservableObject {
                 expectedCount = Int(outerIndex) * 24
             }
             
-            let totalExpected = (model == .ch57x_2 ? 75 : 72) + 4
+            let totalExpected = (model == .ch57x_2 ? 75 + 4 : 72)
             self.readProgress = Double(accumulatedKeyPackets.count) / Double(totalExpected)
             
             if accumulatedKeyPackets.count >= expectedCount {
@@ -244,7 +248,7 @@ public class HIDService: ObservableObject {
         case .readingLEDs(let layerIndex):
             accumulatedLEDPackets[layerIndex] = data
             
-            let totalExpected = (model == .ch57x_2 ? 75 : 72) + 4
+            let totalExpected = (model == .ch57x_2 ? 75 + 4 : 72)
             self.readProgress = Double(accumulatedKeyPackets.count + accumulatedLEDPackets.count) / Double(totalExpected)
             
             self.readPhase = .readingLEDs(layerIndex: layerIndex + 1)

@@ -552,7 +552,7 @@ extension Protocol {
         return nil
     }
 
-    public static func decodeMacroCh57x1(payload: [UInt8]) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
+    public static func decodeMacroCh57x1(payload: [UInt8], layer: UInt8) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
         guard payload.count >= 13 else { return nil }
         guard payload[0] == 0xfe else { return nil }
         
@@ -561,7 +561,6 @@ extension Protocol {
             return nil
         }
         
-        let layer = payload[2] - 1
         let kind = payload[3]
         
         guard let key = fromKeyID(keyId, model: .ch57x_1) else { return nil }

@@ -277,9 +277,10 @@ public class HIDService: ObservableObject {
         
         // 1. Decode keys
         if model == .ch57x_1 {
-            for packet in accumulatedKeyPackets {
+            for (idx, packet) in accumulatedKeyPackets.enumerated() {
+                let layer = UInt8(idx / 24)
                 let payload = Array(packet[1...50])
-                if let result = Protocol.decodeMacroCh57x1(payload: payload) {
+                if let result = Protocol.decodeMacroCh57x1(payload: payload, layer: layer) {
                     let path = "\(result.key.description)-L\(result.layer)"
                     newMappings[path] = result.macro
                 }

@@ -739,6 +739,19 @@ public struct ContentView: View {
                 .font(.headline)
                 .padding(.top, 4)
             
+            if hidService.connectedModel == .ch57x_1 {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .imageScale(.small)
+                    Text("Note: LED configuration cannot be read from CH57x Model 1 devices. The settings will appear blank/default on startup, but you can still configure and apply new LED settings below.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 4)
+            }
+            
             Picker("LED Mode", selection: $ledModeSelection) {
                 Text("Off").tag(0)
                 Text("Backlight").tag(1)

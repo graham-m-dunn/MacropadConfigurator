@@ -80,6 +80,16 @@ public struct ContentView: View {
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                     }
+                    
+                    if hidService.isConnected {
+                        Spacer()
+                        Button(action: { hidService.startReading() }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Reload configuration from device")
+                    }
                 }
                 .padding()
                 .background(Color.white.opacity(0.05))
@@ -363,6 +373,41 @@ public struct ContentView: View {
                 loadConfigurationForSelectedKey()
             }
         }
+        .onChange(of: selectedLayer) { _ in
+            updateLEDSelectionFromLoadedConfig()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MacropadConfigReadDone"))) { _ in
+            self.mockMappings = hidService.readMappings
+            self.loadConfigurationForSelectedKey()
+            self.updateLEDSelectionFromLoadedConfig()
+        }
+        .overlay {
+            if hidService.isReading {
+                ZStack {
+                    Color.black.opacity(0.6)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        ProgressView(value: hidService.readProgress)
+                            .progressViewStyle(.linear)
+                            .frame(width: 200)
+                        
+                        Text("Reading Device Configuration...")
+                            .font(.headline)
+                        
+                        Text("\(Int(hidService.readProgress * 100))%")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(24)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+                }
+            }
+        }
     }
     
     // MARK: - Panel Builders
@@ -573,6 +618,27 @@ public struct ContentView: View {
             mouseDX = 0
             mouseDY = 0
             mouseScroll = 0
+        }
+    }
+    
+    private func updateLEDSelectionFromLoadedConfig() {
+        if let mode = hidService.readLEDModes[selectedLayer] {
+            switch mode {
+            case .off:
+                ledModeSelection = 0
+            case .backlight(let color):
+                ledModeSelection = 1
+                ledBacklightColorSelection = color
+            case .shock(let color):
+                ledModeSelection = 2
+                ledColorSelection = color
+            case .shock2(let color):
+                ledModeSelection = 3
+                ledColorSelection = color
+            case .press(let color):
+                ledModeSelection = 4
+                ledColorSelection = color
+            }
         }
     }
     

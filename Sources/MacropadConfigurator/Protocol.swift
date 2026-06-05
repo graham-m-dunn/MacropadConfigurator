@@ -517,3 +517,185 @@ private extension Int8 {
         }
     }
 }
+
+extension Protocol {
+    public static func fromKeyID(_ keyId: UInt8, model: KeyboardModel) -> Key? {
+        switch model {
+        case .ch57x_2:
+            if keyId >= 1 && keyId <= 12 {
+                return .button(Int(keyId - 1))
+            } else if keyId >= 13 {
+                let offset = Int(keyId - 13)
+                let knobIndex = offset / 3
+                let actionRaw = offset % 3
+                if let action = KnobAction(rawValue: actionRaw) {
+                    return .knob(knobIndex, action)
+                }
+            }
+        case .ch57x_1:
+            if keyId >= 1 && keyId <= 12 {
+                return .button(Int(keyId - 1))
+            } else if keyId >= 13 && keyId <= 15 {
+                let actionRaw = Int(keyId - 13)
+                if let action = KnobAction(rawValue: actionRaw) {
+                    return .knob(3, action)
+                }
+            } else if keyId >= 16 {
+                let offset = Int(keyId - 16)
+                let knobIndex = offset / 3
+                let actionRaw = offset % 3
+                if let action = KnobAction(rawValue: actionRaw) {
+                    return .knob(knobIndex, action)
+                }
+            }
+        }
+        return nil
+    }
+
+    public static func decodeMacroCh57x1(payload: [UInt8]) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
+        guard payload.count >= 12 else { return nil }
+        let keyId = payload[0]
+        guard keyId != 0 && keyId != 0xff && keyId != 0xfe && keyId != 0xaa && keyId != 0xfd else {
+            return nil
+        }
+        
+        let layer = payload[1] - 1
+        let kind = payload[2]
+        
+        guard let key = fromKeyID(keyId, model: .ch57x_1) else { return nil }
+        
+        switch kind {
+        case 1: // Keyboard
+            let count = Int(payload[8])
+            let modifiers = ModifierFlags(rawValue: payload[9])
+            var keys = [UInt8]()
+            if count > 0 {
+                for i in 0..<min(count, 18) {
+                    let scancode = payload[9 + i * 2 + 1]
+                    if scancode > 0 {
+                        keys.append(scancode)
+                    }
+                }
+            }
+            return (key, layer, .keyboard(modifiers: modifiers, keys: keys))
+            
+        case 2: // Media
+            let low = payload[9]
+            let high = payload[10]
+            let code = UInt16(low) | (UInt16(high) << 8)
+            return (key, layer, .media(code))
+            
+        case 3: // Mouse
+            let actionByte = payload[8]
+            let buttons = payload[10]
+            let dx = Int(Int8(bitPattern: payload[11]))
+            let dy = Int(Int8(bitPattern: payload[12]))
+            let scroll = Int(Int8(bitPattern: payload[13]))
+            
+            let action: MouseActionType
+            if actionByte == 0x01 {
+                action = .click
+            } else if actionByte == 0x03 {
+                action = .wheel
+            } else if buttons > 0 {
+                action = .drag
+            } else {
+                action = .move
+            }
+            return (key, layer, .mouse(action: action, buttons: buttons, dx: dx, dy: dy, scroll: scroll))
+            
+        default:
+            return nil
+        }
+    }
+
+    public static func decodeMacroCh57x2(payload: [UInt8], keyboardAccumulator: inout [String: (modifiers: ModifierFlags, keys: [UInt8])]) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
+        guard payload.count >= 8 else { return nil }
+        let keyId = payload[0]
+        guard keyId != 0 && keyId != 0xff && keyId != 0xfe && keyId != 0xaa && keyId != 0xfd else {
+            return nil
+        }
+        
+        let layerKind = payload[1]
+        let layer = (layerKind >> 4) - 1
+        let kind = layerKind & 0x0f
+        
+        guard let key = fromKeyID(keyId, model: .ch57x_2) else { return nil }
+        let path = "\(key.description)-L\(layer)"
+        
+        switch kind {
+        case 1: // Keyboard
+            let length = payload[2]
+            let seq = payload[3]
+            let modifiers = ModifierFlags(rawValue: payload[4])
+            let code = payload[5]
+            
+            if seq > 0 {
+                var current = keyboardAccumulator[path] ?? (modifiers: modifiers, keys: [])
+                if code > 0 {
+                    current.keys.append(code)
+                }
+                current.modifiers = modifiers
+                keyboardAccumulator[path] = current
+                
+                if current.keys.count == Int(length) {
+                    return (key, layer, .keyboard(modifiers: current.modifiers, keys: current.keys))
+                }
+            } else if seq == 0 {
+                if length == 0 {
+                    return (key, layer, .keyboard(modifiers: modifiers, keys: []))
+                }
+            }
+            return nil
+            
+        case 2: // Media
+            let low = payload[2]
+            let high = payload[3]
+            let code = UInt16(low) | (UInt16(high) << 8)
+            return (key, layer, .media(code))
+            
+        case 3: // Mouse
+            let buttons = payload[2]
+            let dx = Int(Int8(bitPattern: payload[3]))
+            let dy = Int(Int8(bitPattern: payload[4]))
+            let scroll = Int(Int8(bitPattern: payload[5]))
+            
+            if scroll != 0 {
+                return (key, layer, .mouse(action: .wheel, buttons: 0, dx: 0, dy: 0, scroll: scroll))
+            } else if dx == 0 && dy == 0 {
+                return (key, layer, .mouse(action: .click, buttons: buttons, dx: 0, dy: 0, scroll: 0))
+            } else if buttons > 0 {
+                return (key, layer, .mouse(action: .drag, buttons: buttons, dx: dx, dy: dy, scroll: 0))
+            } else {
+                return (key, layer, .mouse(action: .move, buttons: 0, dx: dx, dy: dy, scroll: 0))
+            }
+            
+        default:
+            return nil
+        }
+    }
+
+    public static func decodeLEDMode(combinedCode: UInt8) -> LEDMode {
+        let modeCode = combinedCode & 0x0f
+        let colorCode = combinedCode >> 4
+        
+        switch modeCode {
+        case 0:
+            return .off
+        case 1, 5:
+            let color = LEDBacklightColor(rawValue: colorCode) ?? .white
+            return .backlight(color)
+        case 2:
+            let color = LEDColor(rawValue: colorCode) ?? .cyan
+            return .shock(color)
+        case 3:
+            let color = LEDColor(rawValue: colorCode) ?? .cyan
+            return .shock2(color)
+        case 4:
+            let color = LEDColor(rawValue: colorCode) ?? .cyan
+            return .press(color)
+        default:
+            return .off
+        }
+    }
+}

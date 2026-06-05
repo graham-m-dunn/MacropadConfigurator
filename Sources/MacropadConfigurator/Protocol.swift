@@ -554,7 +554,7 @@ extension Protocol {
 
     public static func decodeMacroCh57x1(payload: [UInt8], layer: UInt8) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
         guard payload.count >= 13 else { return nil }
-        guard payload[0] == 0xfe else { return nil }
+        guard payload[0] == 0xfa || payload[0] == 0xfe else { return nil }
         
         let keyId = payload[1]
         guard keyId != 0 && keyId != 0xff && keyId != 0xfe && keyId != 0xaa && keyId != 0xfd else {

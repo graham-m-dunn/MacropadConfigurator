@@ -14,6 +14,7 @@ This tool communicates directly with the macro pad using Apple's native `IOHIDMa
 - **Onboard LED Backlight Control**: Custom configurations for LED Modes (Off, Backlight, Shock, Shock 2, Press) and colors (Red, Orange, Yellow, Green, Cyan, Blue, Purple, White).
 - **Smart Hardware Identification**: Detects connected devices automatically. Disables Layer 2–4 controls on wired-only macro pads (like the 0x8851) while supporting multi-layer configurations on wireless/Bluetooth models.
 - **Transmission Logging**: Real-time status display and logging of configurations written to the device memory.
+- **Profile Management**: Backup current layouts to standard JSON files, load backups on demand, and bulk-flash configuration profiles to easily clone multiple keypads.
 
 ---
 

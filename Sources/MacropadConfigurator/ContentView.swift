@@ -452,7 +452,7 @@ public struct ContentView: View {
                 )) {
                     Text("None (Modifier Only)").tag(UInt8(0))
                     ForEach(USBKeyCode.codes) { item in
-                        Text(item.name).tag(item.code)
+                        Text(displayKeyName(for: item, shift: shiftModifier)).tag(item.code)
                     }
                 }
                 .frame(width: 250)
@@ -548,6 +548,40 @@ public struct ContentView: View {
     
     // MARK: - Controller Actions
     
+    private func displayKeyName(for item: USBKeyCode, shift: Bool) -> String {
+        let name = item.name
+        if name.count == 1, let char = name.first, char.isLetter {
+            return shift ? name.uppercased() : name.lowercased()
+        }
+        if shift {
+            switch name {
+            case "1": return "!"
+            case "2": return "@"
+            case "3": return "#"
+            case "4": return "$"
+            case "5": return "%"
+            case "6": return "^"
+            case "7": return "&"
+            case "8": return "*"
+            case "9": return "("
+            case "0": return ")"
+            case "Minus (-)": return "Underscore (_)"
+            case "Equal (=)": return "Plus (+)"
+            case "[": return "{"
+            case "]": return "}"
+            case "\\": return "|"
+            case ";": return ":"
+            case "'": return "\""
+            case "`": return "~"
+            case ",": return "<"
+            case ".": return ">"
+            case "/": return "?"
+            default: break
+            }
+        }
+        return name
+    }
+    
     private func getMacroSummary(key: Key) -> String {
         let path = mappingKey(key: key, layer: selectedLayer)
         guard let macro = mockMappings[path] else {
@@ -563,7 +597,8 @@ public struct ContentView: View {
             if modifiers.contains(.win) { parts.append("Cmd") }
             
             if let firstCode = keys.first {
-                let name = USBKeyCode.codes.first(where: { $0.code == firstCode })?.name ?? "<\(firstCode)>"
+                let item = USBKeyCode.codes.first(where: { $0.code == firstCode })
+                let name = item != nil ? displayKeyName(for: item!, shift: modifiers.contains(.shift)) : "<\(firstCode)>"
                 parts.append(name)
             }
             

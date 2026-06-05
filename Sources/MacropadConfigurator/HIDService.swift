@@ -222,6 +222,10 @@ public class HIDService: ObservableObject {
     private func handleIncomingReport(_ data: Data) {
         guard isReading else { return }
         guard data.count >= 64, data[0] == 0x03 else { return }
+        
+        let hexString = data.map { String(format: "%02X", $0) }.joined(separator: " ")
+        self.log("Received report: [\(hexString)]")
+        
         guard let model = connectedModel else { return }
         
         switch readPhase {

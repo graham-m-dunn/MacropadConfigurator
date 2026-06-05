@@ -553,25 +553,27 @@ extension Protocol {
     }
 
     public static func decodeMacroCh57x1(payload: [UInt8]) -> (key: Key, layer: UInt8, macro: KeyMacro)? {
-        guard payload.count >= 12 else { return nil }
-        let keyId = payload[0]
+        guard payload.count >= 13 else { return nil }
+        guard payload[0] == 0xfe else { return nil }
+        
+        let keyId = payload[1]
         guard keyId != 0 && keyId != 0xff && keyId != 0xfe && keyId != 0xaa && keyId != 0xfd else {
             return nil
         }
         
-        let layer = payload[1] - 1
-        let kind = payload[2]
+        let layer = payload[2] - 1
+        let kind = payload[3]
         
         guard let key = fromKeyID(keyId, model: .ch57x_1) else { return nil }
         
         switch kind {
         case 1: // Keyboard
-            let count = Int(payload[8])
-            let modifiers = ModifierFlags(rawValue: payload[9])
+            let count = Int(payload[9])
+            let modifiers = ModifierFlags(rawValue: payload[10])
             var keys = [UInt8]()
             if count > 0 {
                 for i in 0..<min(count, 18) {
-                    let scancode = payload[9 + i * 2 + 1]
+                    let scancode = payload[10 + i * 2 + 1]
                     if scancode > 0 {
                         keys.append(scancode)
                     }
@@ -580,17 +582,17 @@ extension Protocol {
             return (key, layer, .keyboard(modifiers: modifiers, keys: keys))
             
         case 2: // Media
-            let low = payload[9]
-            let high = payload[10]
+            let low = payload[10]
+            let high = payload[11]
             let code = UInt16(low) | (UInt16(high) << 8)
             return (key, layer, .media(code))
             
         case 3: // Mouse
-            let actionByte = payload[8]
-            let buttons = payload[10]
-            let dx = Int(Int8(bitPattern: payload[11]))
-            let dy = Int(Int8(bitPattern: payload[12]))
-            let scroll = Int(Int8(bitPattern: payload[13]))
+            let actionByte = payload[9]
+            let buttons = payload[11]
+            let dx = Int(Int8(bitPattern: payload[12]))
+            let dy = Int(Int8(bitPattern: payload[13]))
+            let scroll = Int(Int8(bitPattern: payload[14]))
             
             let action: MouseActionType
             if actionByte == 0x01 {

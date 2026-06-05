@@ -352,6 +352,7 @@ public struct ContentView: View {
                                         .id(i)
                                 }
                             }
+                            .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(8)
                         }

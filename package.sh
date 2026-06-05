@@ -16,6 +16,9 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 echo "Copying binary..."
 cp "${BUILD_DIR}/${APP_NAME}" "${APP_BUNDLE}/Contents/MacOS/"
 
+echo "Copying assets..."
+cp Assets/AppIcon.icns "${APP_BUNDLE}/Contents/Resources/"
+
 echo "Generating Info.plist..."
 cat <<EOF > "${APP_BUNDLE}/Contents/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -24,6 +27,8 @@ cat <<EOF > "${APP_BUNDLE}/Contents/Info.plist"
 <dict>
     <key>CFBundleExecutable</key>
     <string>${APP_NAME}</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
     <key>CFBundleIdentifier</key>
     <string>com.macropad.${APP_NAME}</string>
     <key>CFBundleName</key>

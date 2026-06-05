@@ -46,6 +46,16 @@ public struct ContentView: View {
         return flags
     }
     
+    private var modelHardwareInfo: String {
+        guard let model = hidService.connectedModel else { return "" }
+        switch model {
+        case .ch57x_1:
+            return "CH57x-based Model 1 (3 Keys + Knob)"
+        case .ch57x_2:
+            return "CH57x-based Model 2 (12 Keys + Knobs)"
+        }
+    }
+    
     private var activeLEDMode: LEDMode {
         switch ledModeSelection {
         case 0: return .off
@@ -75,6 +85,11 @@ public struct ContentView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(hidService.isConnected ? "Connected" : "Disconnected")
                             .font(.headline)
+                        if hidService.isConnected {
+                            Text(modelHardwareInfo)
+                                .font(.caption2)
+                                .foregroundColor(.accentColor)
+                        }
                         Text(hidService.connectedDeviceName)
                             .font(.caption2)
                             .foregroundColor(.secondary)

@@ -1,7 +1,7 @@
 import XCTest
-@testable import SikaiConfigurator
+@testable import MacropadConfigurator
 
-final class SikaiConfiguratorTests: XCTestCase {
+final class MacropadConfiguratorTests: XCTestCase {
     
     func testKeyIDMappingCh57x2() {
         // Buttons (0-indexed) mapping to IDs (1-based)

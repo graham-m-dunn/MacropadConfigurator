@@ -13,11 +13,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct SikaiConfiguratorApp: App {
+struct MacropadConfiguratorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        WindowGroup("Sikai Keyboard Configurator") {
+        WindowGroup("Macropad Configurator") {
             ContentView()
         }
         .windowStyle(.titleBar)

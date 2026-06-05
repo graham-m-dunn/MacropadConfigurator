@@ -4,18 +4,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "SikaiConfigurator",
+    name: "MacropadConfigurator",
     platforms: [
         .macOS(.v13)
     ],
     targets: [
         .executableTarget(
-            name: "SikaiConfigurator",
-            path: "Sources/SikaiConfigurator"
+            name: "MacropadConfigurator",
+            path: "Sources/MacropadConfigurator"
         ),
         .testTarget(
-            name: "SikaiConfiguratorTests",
-            dependencies: ["SikaiConfigurator"]
+            name: "MacropadConfiguratorTests",
+            dependencies: ["MacropadConfigurator"]
         ),
     ]
 )

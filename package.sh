@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="SikaiConfigurator"
+APP_NAME="MacropadConfigurator"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 
@@ -25,7 +25,7 @@ cat <<EOF > "${APP_BUNDLE}/Contents/Info.plist"
     <key>CFBundleExecutable</key>
     <string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.sikai.${APP_NAME}</string>
+    <string>com.macropad.${APP_NAME}</string>
     <key>CFBundleName</key>
     <string>${APP_NAME}</string>
     <key>CFBundlePackageType</key>

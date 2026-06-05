@@ -34,7 +34,7 @@ Because this application is distributed as a compiled, unsigned binary, macOS Ga
 To run the application, follow these simple steps:
 
 ### Option A: The Right-Click Method (easiest)
-1. Download the release `.zip` and extract `SikaiConfigurator.app`.
+1. Download the release `.zip` and extract `MacropadConfigurator.app`.
 2. Drag the app into your `/Applications` folder.
 3. Instead of double-clicking it, **Right-Click** (or `Control` + Click) the app icon and select **Open**.
 4. A warning dialog will appear, but it will feature an **Open** button. Click **Open**.
@@ -42,10 +42,10 @@ To run the application, follow these simple steps:
 
 ### Option B: Terminal Bypass (most reliable)
 If macOS refuses to open the app, clear the quarantine flag manually:
-1. Move the extracted `SikaiConfigurator.app` to your `/Applications` folder.
+1. Move the extracted `MacropadConfigurator.app` to your `/Applications` folder.
 2. Open **Terminal** (`/Applications/Utilities/Terminal.app`) and run:
    ```bash
-   xattr -cr /Applications/SikaiConfigurator.app
+   xattr -cr /Applications/MacropadConfigurator.app
    ```
 This recursively strips the quarantine attributes, allowing it to open instantly.
 
@@ -67,7 +67,7 @@ To package the compiled executable into a double-clickable macOS app bundle (`.a
 ```bash
 ./package.sh
 ```
-This generates `SikaiConfigurator-macOS.zip` in the root folder.
+This generates `MacropadConfigurator-macOS.zip` in the root folder.
 
 ---
 

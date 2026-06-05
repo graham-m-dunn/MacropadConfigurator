@@ -6,5 +6,5 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
-SikaiConfigurator-macOS.zip
-SikaiConfigurator.app/
+MacropadConfigurator-macOS.zip
+MacropadConfigurator.app/
